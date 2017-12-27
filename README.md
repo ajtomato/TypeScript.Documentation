@@ -361,6 +361,319 @@ Second, the Typescript compiler doesn't allow spreads of type parameters from ge
 
 ### Interfaces
 
+#### Our First Interface
+
+One of TypeScript's core principles is that type-checking focuses on the *shape* that values have. This is sometimes called "duck typing" or "structural subtyping". In TypeScript, interfaces fill the role of naming these types, and are a powerful way of defining contracts within your code as well as contracts with code outside of your project.
+
+    function printLabel(labelledObj: { label: string }) {
+        console.log(labelledObj.label);
+    }
+
+    let myObj = {size: 10, label: "Size 10 Object"};
+    printLabel(myObj);
+
+The type-checker checks the call to *printLabel*. The *printLabel* function has a single parameter that requires that the object passed in has a property called *label* of type string. Notice that our object actually has more properties than this, but the compiler only checks that *at least* the ones required are present and match the types required.
+
+    interface LabelledValue {
+        label: string;
+    }
+
+    function printLabel(labelledObj: LabelledValue) {
+        console.log(labelledObj.label);
+    }
+
+    let myObj = {size: 10, label: "Size 10 Object"};
+    printLabel(myObj);
+
+The interface *LabelledValue* is a name we can now use to describe the requirement in the previous example. It still represents having a single property called *label* that is of type string. Notice we didn't have to explicitly say that the object we pass to *printLabel* implements this interface like we might have to in other languages. Here, it's only the shape that matters. If the object we pass to the function meets the requirements listed, then it's allowed.
+
+It's worth pointing out that the type-checker does not require that these properties come in any sort of order, only that the properties the interface requires are present and have the required type.
+
+#### Optional Properties
+
+Not all properties of an interface may be required.
+
+These optional properties are popular when creating patterns like "option bags" where you pass an object to a function that only has a couple of properties filled in.
+
+    interface SquareConfig {
+        color?: string;
+        width?: number;
+    }
+
+    function createSquare(config: SquareConfig): {color: string; area: number} {
+        let newSquare = {color: "white", area: 100};
+        if (config.color) {
+            newSquare.color = config.color;
+        }
+        if (config.width) {
+            newSquare.area = config.width * config.width;
+        }
+        return newSquare;
+    }
+
+    let mySquare = createSquare({color: "black"});
+
+Interfaces with optional properties are written similar to other interfaces, with each optional property denoted by a ? at the end of the property name in the declaration.
+
+#### Readonly properties
+
+Some properties should only be modifiable when an object is first created. You can specify this by putting *readonly* before the name of the property:
+
+    interface Point {
+        readonly x: number;
+        readonly y: number;
+    }
+
+You can construct a *Point* by assigning an object literal. After the assignment, *x* and *y* can't be changed.
+
+    let p1: Point = { x: 10, y: 20 };
+    p1.x = 5; // error!
+
+TypeScript comes with a *ReadonlyArray<T>* type that is the same as *Array<T>* with all mutating methods removed, so you can make sure you don't change your arrays after creation:
+
+    let a: number[] = [1, 2, 3, 4];
+    let ro: ReadonlyArray<number> = a;
+    ro[0] = 12;         // error!
+    ro.push(5);         // error!
+    ro.length = 100;    // error!
+    a = ro;             // error!
+
+On the last line of the snippet you can see that even assigning the entire *ReadonlyArray* back to a normal array is illegal. You can still override it with a type assertion, though:
+
+    a = ro as number[];
+
+The easiest way to remember whether to use *readonly* or *const* is to ask whether you're using it on a variable or a property. Variables use *const* whereas properties use *readonly*.
+
+#### Excess Property Checks
+
+If an object literal has any properties that the "target type" doesn't have, you'll get an error.
+
+    // error: 'colour' not expected in type 'SquareConfig'
+    let mySquare = createSquare({ colour: "red", width: 100 });
+
+If you're sure that the object can have some extra properties that are used in some special way. If *SquareConfig*s can have *color* and *width* properties with the above types, but could *also* have any number of other properties, then we could define it like so:
+
+    interface SquareConfig {
+        color?: string;
+        width?: number;
+        [propName: string]: any;
+    }
+
+We'll discuss index signatures in a bit, but here we're saying a *SquareConfig* can have any number of properties, and as long as they aren't *color* or *width*, their types don't matter.
+
+#### Function Types
+
+In addition to describing an object with properties, interfaces are also capable of describing function types.
+
+To describe a function type with an interface, we give the interface a call signature. This is like a function declaration with only the parameter list and return type given. Each parameter in the parameter list requires both name and type.
+
+    interface SearchFunc {
+        (source: string, subString: string): boolean;
+    }
+
+Once defined, we can use this function type interface like we would other interfaces. Here, we show how you can create a variable of a function type and assign it a function value of the same type.
+
+    let mySearch: SearchFunc;
+    mySearch = function(source: string, subString: string) {
+        let result = source.search(subString);
+        return result > -1;
+    }
+
+For function types to correctly type-check, the names of the parameters do not need to match.
+
+Function parameters are checked one at a time, with the type in each corresponding parameter position checked against each other. If you do not want to specify types at all, TypeScript's contextual typing can infer the argument types since the function value is assigned directly to a variable of type *SearchFunc*. Here, also, the return type of our function expression is implied by the values it returns (here *false* and *true*). Had the function expression returned numbers or strings, the type-checker would have warned us that return type doesn't match the return type described in the *SearchFunc* interface.
+
+    let mySearch: SearchFunc;
+    mySearch = function(src, sub) {
+        let result = src.search(sub);
+        return result > -1;
+    }
+
+#### Indexable Types
+
+Indexable types have an *index signature* that describes the types we can use to index into the object, along with the corresponding return types when indexing.
+
+    interface StringArray {
+        [index: number]: string;
+    }
+
+    let myArray: StringArray;
+    myArray = ["Bob", "Fred"];
+
+    let myStr: string = myArray[0];
+
+There are two types of supported index signatures: string and number. It is possible to support both types of indexers, but the type returned from a numeric indexer must be a subtype of the type returned from the string indexer. This is because when indexing with a *number*, JavaScript will actually convert that to a *string* before indexing into an object. That means that indexing with 100 (a *number*) is the same thing as indexing with "100" (a *string*), so the two need to be consistent.
+
+    class Animal {
+        name: string;
+    }
+    class Dog extends Animal {
+        breed: string;
+    }
+
+    // Error: indexing with a 'string' will sometimes get you an Animal!
+    interface NotOkay {
+        [x: number]: Animal;
+        [x: string]: Dog;
+    }
+
+While string index signatures are a powerful way to describe the "dictionary" pattern, they also enforce that all properties match their return type. This is because a string index declares that *obj.property* is also available as *obj["property"]*.
+
+    interface NumberDictionary {
+        [index: string]: number;
+        length: number;    // ok, length is a number
+        name: string;      // error, the type of 'name' is not a subtype of the indexer
+    }
+
+Finally, you can make index signatures readonly in order to prevent assignment to their indices:
+
+    interface ReadonlyStringArray {
+        readonly [index: number]: string;
+    }
+    let myArray: ReadonlyStringArray = ["Alice", "Bob"];
+    myArray[2] = "Mallory"; // error!
+
+#### Class Types
+
+Explicitly enforcing that a class meets a particular contract, is also possible in TypeScript.
+
+    interface ClockInterface {
+        currentTime: Date;
+    }
+
+    class Clock implements ClockInterface {
+        currentTime: Date;
+        constructor(h: number, m: number) { }
+    }
+
+You can also describe methods in an interface that are implemented in the class.
+
+    interface ClockInterface {
+        currentTime: Date;
+        setTime(d: Date);
+    }
+
+    class Clock implements ClockInterface {
+        currentTime: Date;
+        setTime(d: Date) {
+            this.currentTime = d;
+        }
+        constructor(h: number, m: number) { }
+    }
+
+If you create an interface with a construct signature and try to create a class that implements this interface you get an error. This is because when a class implements an interface, only the instance side of the class is checked. Since the constructor sits in the static side, it is not included in this check.
+
+    interface ClockConstructor {
+        new (hour: number, minute: number): ClockInterface;
+    }
+    interface ClockInterface {
+        tick();
+    }
+
+    function createClock(ctor: ClockConstructor, hour: number, minute: number): ClockInterface {
+        return new ctor(hour, minute);
+    }
+
+    class DigitalClock implements ClockInterface {
+        constructor(h: number, m: number) { }
+        tick() {
+            console.log("beep beep");
+        }
+    }
+    class AnalogClock implements ClockInterface {
+        constructor(h: number, m: number) { }
+        tick() {
+            console.log("tick tock");
+        }
+    }
+
+    let digital = createClock(DigitalClock, 12, 17);
+    let analog = createClock(AnalogClock, 7, 32);
+
+#### Extending Interfaces
+
+    interface Shape {
+        color: string;
+    }
+
+    interface Square extends Shape {
+        sideLength: number;
+    }
+
+    let square = <Square>{};
+    square.color = "blue";
+    square.sideLength = 10;
+
+An interface can extend multiple interfaces, creating a combination of all of the interfaces.
+
+    interface Shape {
+        color: string;
+    }
+
+    interface PenStroke {
+        penWidth: number;
+    }
+
+    interface Square extends Shape, PenStroke {
+        sideLength: number;
+    }
+
+    let square = <Square>{};
+    square.color = "blue";
+    square.sideLength = 10;
+    square.penWidth = 5.0;
+
+#### Hybrid Types
+
+You may occasionally encounter an object that works as a combination of some of the types described above.
+
+    interface Counter {
+        (start: number): string;
+        interval: number;
+        reset(): void;
+    }
+
+    function getCounter(): Counter {
+        let counter = <Counter>function (start: number) { };
+        counter.interval = 123;
+        counter.reset = function () { };
+        return counter;
+    }
+
+    let c = getCounter();
+    c(10);
+    c.reset();
+    c.interval = 5.0;
+
+#### Interfaces Extending Classes
+
+When an interface type extends a class type it inherits the members of the class but not their implementations. Interfaces inherit even the private and protected members of a base class. This means that when you create an interface that extends a class with private or protected members, that interface type can only be implemented by that class or a subclass of it.
+
+This is useful when you have a large inheritance hierarchy, but want to specify that your code works with only subclasses that have certain properties. The subclasses don’t have to be related besides inheriting from the base class.
+
+    class Control {
+        private state: any;
+    }
+
+    interface SelectableControl extends Control {
+        select(): void;
+    }
+
+    class Button extends Control implements SelectableControl {
+        select() { }
+    }
+
+    class TextBox extends Control {
+    }
+
+    // Error: Property 'state' is missing in type 'Image'.
+    class Image implements SelectableControl {
+        select() { }
+    }
+
+    class Location {
+    }
+
 ### Classes
 
 ### Functions
