@@ -870,6 +870,133 @@ Here we use *typeof Greeter*, that is "give me the type of the *Greeter* class i
 
 ### Functions
 
+To begin, just as in JavaScript, TypeScript functions can be created both as a named function or as an anonymous function. This allows you to choose the most appropriate approach for your application, whether you're building a list of functions in an API or a one-off function to hand off to another function.
+
+    // Named function
+    function add(x, y) {
+        return x + y;
+    }
+
+    // Anonymous function
+    let myAdd = function(x, y) { return x + y; };
+
+#### Function Types
+
+TypeScript can figure the return type out by looking at the return statements, so we can also optionally leave this off in many cases.
+
+    let myAdd = function(x: number, y: number): number { return x + y; };
+    // Equals to the following statement
+    let myAdd: (x: number, y: number) => number =
+        function(x: number, y: number): number { return x + y; };
+
+A function's type has the same two parts: the type of the arguments and the return type. When writing out the whole function type, both parts are required. We write out the parameter types just like a parameter list, giving each parameter a name and a type. This name is just to help with readability. As long as the parameter types line up, it's considered a valid type for the function, regardless of the names you give the parameters in the function type.
+
+We make it clear which is the return type by using a fat arrow (`=>`) between the parameters and the return type. As mentioned before, the return type is a required part of the function type, so if the function doesn't return a value, you would use *void* instead of leaving it off.
+
+#### Optional and Default Parameters
+
+In TypeScript, adding a `?` to the end of parameters we want to be optional.
+
+    function buildName(firstName: string, lastName?: string) {
+        if (lastName)
+            return firstName + " " + lastName;
+        else
+            return firstName;
+    }
+
+    let result1 = buildName("Bob");                  // works correctly now
+    let result2 = buildName("Bob", "Adams", "Sr.");  // error, too many parameters
+    let result3 = buildName("Bob", "Adams");         // ah, just right
+
+Any optional parameters must follow required parameters.
+
+In TypeScript, we can also set a value that a parameter will be assigned if the user does not provide one, or if the user passes *undefined* in its place. These are called default-initialized parameters.
+
+    function buildName(firstName: string, lastName = "Smith") {
+        return firstName + " " + lastName;
+    }
+
+    let result1 = buildName("Bob");                  // works correctly now, returns "Bob Smith"
+    let result2 = buildName("Bob", undefined);       // still works, also returns "Bob Smith"
+    let result3 = buildName("Bob", "Adams", "Sr.");  // error, too many parameters
+    let result4 = buildName("Bob", "Adams");         // ah, just right
+
+Default-initialized parameters that come after all required parameters are treated as optional, and just like optional parameters, can be omitted when calling their respective function.
+
+Unlike plain optional parameters, default-initialized parameters don't *need* to occur after required parameters. If a default-initialized parameter comes before a required parameter, users need to explicitly pass *undefined* to get the default initialized value.
+
+    function buildName(firstName = "Will", lastName: string) {
+        return firstName + " " + lastName;
+    }
+
+    let result1 = buildName("Bob");                  // error, too few parameters
+    let result2 = buildName("Bob", "Adams", "Sr.");  // error, too many parameters
+    let result3 = buildName("Bob", "Adams");         // okay and returns "Bob Adams"
+    let result4 = buildName(undefined, "Adams");     // okay and returns "Will Adams"
+
+#### Rest Parameters
+
+*Rest parameters* are treated as a boundless number of optional parameters. When passing arguments for a rest parameter, you can use as many as you want; you can even pass none. The compiler will build an array of the arguments passed in with the name given after the ellipsis (`...`), allowing you to use it in your function.
+
+    function buildName(firstName: string, ...restOfName: string[]) {
+        return firstName + " " + restOfName.join(" ");
+    }
+
+    let buildNameFun: (fname: string, ...rest: string[]) => string = buildName;
+    let employeeName = buildName("Joseph", "Samuel", "Lucas", "MacKinzie");
+
+#### this
+
+Arrow functions capture the *this* where the function is created rather than where it is invoked.
+
+    let deck = {
+        suits: ["hearts", "spades", "clubs", "diamonds"],
+        cards: Array(52),
+        createCardPicker: function() {
+            // NOTE: the line below is now an arrow function, allowing us to capture 'this' right here
+            return () => {
+                let pickedCard = Math.floor(Math.random() * 52);
+                let pickedSuit = Math.floor(pickedCard / 13);
+
+                return {suit: this.suits[pickedSuit], card: pickedCard % 13};
+            }
+        }
+    }
+
+    let cardPicker = deck.createCardPicker();
+    let pickedCard = cardPicker();
+
+    alert("card: " + pickedCard.card + " of " + pickedCard.suit);
+
+#### Overloads
+
+Supply multiple function types for the same function as a list of overloads. This list is what the compiler will use to resolve function calls.
+
+    let suits = ["hearts", "spades", "clubs", "diamonds"];
+
+    function pickCard(x: {suit: string; card: number; }[]): number;
+    function pickCard(x: number): {suit: string; card: number; };
+    function pickCard(x): any {
+        // Check to see if we're working with an object/array
+        // if so, they gave us the deck and we'll pick the card
+        if (typeof x == "object") {
+            let pickedCard = Math.floor(Math.random() * x.length);
+            return pickedCard;
+        }
+        // Otherwise just let them pick the card
+        else if (typeof x == "number") {
+            let pickedSuit = Math.floor(x / 13);
+            return { suit: suits[pickedSuit], card: x % 13 };
+        }
+    }
+
+    let myDeck = [{ suit: "diamonds", card: 2 }, { suit: "spades", card: 10 }, { suit: "hearts", card: 4 }];
+    let pickedCard1 = myDeck[pickCard(myDeck)];
+    alert("card: " + pickedCard1.card + " of " + pickedCard1.suit);
+
+    let pickedCard2 = pickCard(15);
+    alert("card: " + pickedCard2.card + " of " + pickedCard2.suit);
+
 ### Generics
 
 ### Enums
