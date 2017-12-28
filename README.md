@@ -676,6 +676,198 @@ This is useful when you have a large inheritance hierarchy, but want to specify 
 
 ### Classes
 
+#### Classes
+
+    class Greeter {
+        greeting: string;
+        constructor(message: string) {
+            this.greeting = message;
+        }
+        greet() {
+            return "Hello, " + this.greeting;
+        }
+    }
+
+let greeter = new Greeter("world");
+
+#### Inheritance
+
+Classes inherit properties and methods from base classes.
+
+    class Animal {
+        name: string;
+        constructor(theName: string) { this.name = theName; }
+        move(distanceInMeters: number = 0) {
+            console.log(`${this.name} moved ${distanceInMeters}m.`);
+        }
+    }
+
+    class Snake extends Animal {
+        constructor(name: string) { super(name); }
+        move(distanceInMeters = 5) {
+            console.log("Slithering...");
+            super.move(distanceInMeters);
+        }
+    }
+
+    class Horse extends Animal {
+        constructor(name: string) { super(name); }
+        move(distanceInMeters = 45) {
+            console.log("Galloping...");
+            super.move(distanceInMeters);
+        }
+    }
+
+    let sam = new Snake("Sammy the Python");
+    let tom: Animal = new Horse("Tommy the Palomino");
+
+    sam.move();
+    tom.move(34);
+
+Each derived class that contains a constructor function *must* call *super()* which will execute the constructor of the base class. What's more, before we *ever* access a property on *this* in a constructor body, we *have* to call *super()*.
+
+#### Public, private, and protected modifiers
+
+In TypeScript, each member is *public* by default.
+
+When a member is marked *private*, it cannot be accessed from outside of its containing class.
+
+When we compare two different types, regardless of where they came from, if the types of all members are compatible, then we say the types themselves are compatible.
+
+However, when comparing types that have *private* and *protected* members, we treat these types differently. For two types to be considered compatible, if one of them has a *private* member, then the other must have a *private* member that originated in the same declaration. The same applies to *protected* members.
+
+    class Animal {
+        private name: string;
+        constructor(theName: string) { this.name = theName; }
+    }
+
+    class Rhino extends Animal {
+        constructor() { super("Rhino"); }
+    }
+
+    class Employee {
+        private name: string;
+        constructor(theName: string) { this.name = theName; }
+    }
+
+    let animal = new Animal("Goat");
+    let rhino = new Rhino();
+    let employee = new Employee("Bob");
+
+    animal = rhino;
+    animal = employee; // Error: 'Animal' and 'Employee' are not compatible
+
+A constructor may also be marked *protected*. This means that the class cannot be instantiated outside of its containing class, but can be extended.
+
+#### Readonly modifier
+
+You can make properties readonly by using the *readonly* keyword. Readonly properties must be initialized at their declaration or in the constructor.
+
+    class Octopus {
+        readonly name: string;
+        readonly numberOfLegs: number = 8;
+        constructor (theName: string) {
+            this.name = theName;
+        }
+    }
+    let dad = new Octopus("Man with the 8 strong legs");
+    dad.name = "Man with the 3-piece suit"; // error! name is readonly.
+
+Parameter properties are declared by prefixing a constructor parameter with an accessibility modifier or *readonly*, or both. Using *private* for a parameter property declares and initializes a private member; likewise, the same is done for *public*, *protected*, and *readonly*.
+
+    class Octopus {
+        readonly numberOfLegs: number = 8;
+        constructor(readonly name: string) {
+        }
+    }
+
+#### Accessors
+
+TypeScript supports getters/setters as a way of intercepting accesses to a member of an object.
+
+    let passcode = "secret passcode";
+
+    class Employee {
+        private _fullName: string;
+
+        get fullName(): string {
+            return this._fullName;
+        }
+
+        set fullName(newName: string) {
+            if (passcode && passcode == "secret passcode") {
+                this._fullName = newName;
+            }
+            else {
+                console.log("Error: Unauthorized update of employee!");
+            }
+        }
+    }
+
+    let employee = new Employee();
+    employee.fullName = "Bob Smith";
+    if (employee.fullName) {
+        console.log(employee.fullName);
+    }
+
+Accessors with a *get* and no *set* are automatically inferred to be *readonly*.
+
+#### Static Properties
+
+Each instance accesses the static properties through prepending the name of the class.
+
+    class Grid {
+        static origin = {x: 0, y: 0};
+        calculateDistanceFromOrigin(point: {x: number; y: number;}) {
+            let xDist = (point.x - Grid.origin.x);
+            let yDist = (point.y - Grid.origin.y);
+            return Math.sqrt(xDist * xDist + yDist * yDist) / this.scale;
+        }
+        constructor (public scale: number) { }
+    }
+
+    let grid1 = new Grid(1.0);  // 1x scale
+    let grid2 = new Grid(5.0);  // 5x scale
+
+    console.log(grid1.calculateDistanceFromOrigin({x: 10, y: 10}));
+    console.log(grid2.calculateDistanceFromOrigin({x: 10, y: 10}));
+
+#### Abstract Classes
+
+    abstract class Animal {
+        abstract makeSound(): void;
+        move(): void {
+            console.log("roaming the earth...");
+        }
+    }
+
+#### Advanced Techniques
+
+    class Greeter {
+        static standardGreeting = "Hello, there";
+        greeting: string;
+        greet() {
+            if (this.greeting) {
+                return "Hello, " + this.greeting;
+            }
+            else {
+                return Greeter.standardGreeting;
+            }
+        }
+    }
+
+    let greeter1: Greeter;
+    greeter1 = new Greeter();
+    console.log(greeter1.greet());
+
+    let greeterMaker: typeof Greeter = Greeter;
+    greeterMaker.standardGreeting = "Hey there!";
+
+    let greeter2: Greeter = new greeterMaker();
+    console.log(greeter2.greet());
+
+Here we use *typeof Greeter*, that is "give me the type of the *Greeter* class itself" rather than the instance type. This type will contain all of the static members of Greeter along with the constructor that creates instances of the *Greeter* class. We show this by using *new* on *greeterMaker*, creating new instances of *Greeter* and invoking them as before.
+
 ### Functions
 
 ### Generics
