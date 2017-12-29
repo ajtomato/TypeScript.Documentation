@@ -999,6 +999,76 @@ Supply multiple function types for the same function as a list of overloads. Thi
 
 ### Generics
 
+#### Hello World of Generics
+
+    function identity<T>(arg: T): T {
+        return arg;
+    }
+
+    let output = identity<string>("myString");  // type of output will be 'string'
+    let output = identity("myString");          // type of output will be 'string'
+
+#### Working with Generic Type Variables
+
+When you begin to use generics, you'll notice that when you create generic functions like *identity*, the compiler will enforce that you use any generically typed parameters in the body of the function correctly. That is, that you actually treat these parameters as if they could be any and all types.
+
+#### Generic Types
+
+    interface GenericIdentityFn<T> {
+        (arg: T): T;
+    }
+
+    function identity<T>(arg: T): T {
+        return arg;
+    }
+
+    let myIdentity: GenericIdentityFn<number> = identity;
+
+#### Generic Classes
+
+Generic classes have a generic type parameter list in angle brackets (`<>`) following the name of the class.
+
+    class GenericNumber<T> {
+        zeroValue: T;
+        add: (x: T, y: T) => T;
+    }
+
+    let myGenericNumber = new GenericNumber<number>();
+    myGenericNumber.zeroValue = 0;
+    myGenericNumber.add = function(x, y) { return x + y; };
+
+Generic classes are only generic over their instance side rather than their static side, so when working with classes, static members can not use the class's type parameter.
+
+#### Generic Constraints
+
+    interface Lengthwise {
+        length: number;
+    }
+
+    function loggingIdentity<T extends Lengthwise>(arg: T): T {
+        console.log(arg.length);  // Now we know it has a .length property, so no more error
+        return arg;
+    }
+
+    loggingIdentity({length: 10, value: 3});
+
+You can declare a type parameter that is constrained by another type parameter.
+
+    function getProperty<T, K extends keyof T>(obj: T, key: K) {
+        return obj[key];
+    }
+
+    let x = { a: 1, b: 2, c: 3, d: 4 };
+
+    getProperty(x, "a"); // okay
+    getProperty(x, "m"); // error: Argument of type 'm' isn't assignable to 'a' | 'b' | 'c' | 'd'.
+
+When creating factories in TypeScript using generics, it is necessary to refer to class types by their constructor functions.
+
+    function create<T>(c: {new(): T; }): T {
+        return new c();
+    }
+
 ### Enums
 
 ### Type Inference
