@@ -1168,9 +1168,15 @@ Ambient enums are used to describe the shape of already existing enum types.
         C = 2
     }
 
-One important difference between ambient and non-ambient enums is that, in regular enums, members that don’t have an initializer will be considered constant if its preceding enum member is considered constant. In contrast, an ambient (and non-const) enum member that does not have initializer is always considered computed.
+One important difference between ambient and non-ambient enums is that, in regular enums, members that don't have an initializer will be considered constant if its preceding enum member is considered constant. In contrast, an ambient (and non-const) enum member that does not have initializer is always considered computed.
 
 ### Type Inference
+
+When a type inference is made from several expressions, the types of those expressions are used to calculate a "best common type".
+
+When no best common type is found, the resulting inference is the union array type.
+
+If the contextually typed expression contains explicit type information, the contextual type is ignored.
 
 ### Type Compatibility
 
