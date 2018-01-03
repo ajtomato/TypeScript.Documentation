@@ -1071,6 +1071,105 @@ When creating factories in TypeScript using generics, it is necessary to refer t
 
 ### Enums
 
+#### Numeric enums
+
+Numeric enums is as follows:
+    
+    enum Direction {
+        Up = 1,
+        Down,
+        Left,
+        Right,
+    }
+
+Enums without initializers either need to be first, or have to come after numeric enums initialized with numeric constants or other constant enum members.
+
+#### String enums
+
+In a *string enum*, each member has to be constant-initialized with a string literal, or with another string enum member.
+
+    enum Direction {
+        Up = "UP",
+        Down = "DOWN",
+        Left = "LEFT",
+        Right = "RIGHT",
+    }
+
+#### Heterogeneous enums
+
+Technically enums can be mixed with string and numeric members (Heterogeneous enums). Unless you’re really trying to take advantage of JavaScript’s runtime behavior in a clever way, it’s advised that you don’t do this.
+
+    enum BooleanLikeHeterogeneousEnum {
+        No = 0,
+        Yes = "YES",
+    }
+
+#### Computed and constant members
+
+#### Union enums and enum member types
+
+There is a special subset of constant enum members that aren’t calculated: literal enum members. A literal enum member is a constant enum member with no initialized value, or with values that are initialized to
+
+* any string literal (e.g. "foo", "bar, "baz")
+* any numeric literal (e.g. 1, 100)
+* a unary minus applied to any numeric literal (e.g. -1, -100)
+
+Literal enum members also become types as well!
+
+    enum ShapeKind {
+        Circle,
+        Square,
+    }
+
+    interface Circle {
+        kind: ShapeKind.Circle;
+        radius: number;
+    }
+
+    interface Square {
+        kind: ShapeKind.Square;
+        sideLength: number;
+    }
+
+    let c: Circle = {
+        kind: ShapeKind.Square,
+        //    ~~~~~~~~~~~~~~~~ Error!
+        radius: 100,
+    }
+
+Literal enum themselves effectively become a union of each enum member.
+
+#### Enums at runtime
+
+In addition to creating an object with property names for members, numeric enums members also get a reverse mapping from enum values to enum names.
+
+    enum Enum {
+        A
+    }
+    let a = Enum.A;
+    let nameOfA = Enum[a]; // "A"
+
+To avoid paying the cost of extra generated code and additional indirection when accessing enum values, it’s possible to use const enums.
+
+    const enum Enum {
+        A = 1,
+        B = A * 2
+    }
+
+Const enums can only use constant enum expressions and unlike regular enums they are completely removed during compilation. Const enum members are inlined at use sites.
+
+#### Ambient enums
+
+Ambient enums are used to describe the shape of already existing enum types.
+
+    declare enum Enum {
+        A = 1,
+        B,
+        C = 2
+    }
+
+One important difference between ambient and non-ambient enums is that, in regular enums, members that don’t have an initializer will be considered constant if its preceding enum member is considered constant. In contrast, an ambient (and non-const) enum member that does not have initializer is always considered computed.
+
 ### Type Inference
 
 ### Type Compatibility
